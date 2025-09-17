@@ -59,6 +59,10 @@ def default_compute_score(
         from . import math_dapo
 
         res = math_dapo.compute_score(solution_str, ground_truth)
+    elif 'math_longcot_math_verify' in data_source: # AIME2024(math_longcot_math_verify_aime2024) AIME2025(math_longcot_math_verify_aime2025) TrainingData(math_longcot_math_verify)
+        from . import math_dapo
+        res = math_dapo.compute_score(solution_str, ground_truth)
+
     elif data_source in [
         "numina_aops_forum",
         "numina_synthetic_math",

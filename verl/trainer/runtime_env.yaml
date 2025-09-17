@@ -1,5 +1,15 @@
-working_dir: ./
-excludes: ["/.git/"]
+working_dir: .
+excludes:
+  - "*.log"
+  - "*.pt"
+  - "*.bin"
+  - "*.pth"
+  - "data/"
+  - "logs/"
+  - "outputs/"
+  - "checkpoints/"
+  - ".git/"
 env_vars:
   TORCH_NCCL_AVOID_RECORD_STREAMS: "1"
   CUDA_DEVICE_MAX_CONNECTIONS: "1"
+  PYTHONPATH: "."

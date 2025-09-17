@@ -238,6 +238,42 @@ def verify(
     correct, pred = is_correct_minerva(solution_str, answer)
     return correct, pred
 
+from math_verify import parse
+from math_verify import verify as m_verify
+def math_verify_from_sky(solution_str: str, ground_truth: str):
+    ground_truth = [ground_truth] if isinstance(ground_truth, str) else ground_truth
+
+    print(f"solution_str: {solution_str[-10:]}, ground_truth: {ground_truth}")
+    
+    # 0 in case parsing cannot be completed
+    try:
+        math_verify_parsed = parse(solution_str, parsing_timeout=5)
+    except Exception:
+        return -1.0
+    
+    # 0 if parsing is problematic
+    if len(math_verify_parsed) < 2:
+        return -1.0
+    
+    # We perform a quick string match first
+    if math_verify_parsed[1] in ground_truth:
+        return 1.0
+    
+    # We now fallback to semantic verification
+    for gt in ground_truth:
+        try:
+            if m_verify(
+                parse(f"\\boxed{{{gt}}}", parsing_timeout=5),
+                math_verify_parsed,
+                timeout_seconds=5,
+            ):
+                return 1.0
+        except Exception:
+            continue
+    
+    # Very unlikely to be correct after the above matches
+    return -1.0
+
 
 def compute_score(
     solution_str: str,
@@ -256,14 +292,53 @@ def compute_score(
     Returns:
         Reward score (1.0 for correct, -1.0 for incorrect)
     """
-    # Limit solution length for efficiency
-    solution_str = solution_str[-300:]  # The longest answer in MATH-500 has 159 characters
+    # # Limit solution length for efficiency
+    # solution_str = solution_str[-300:]  # The longest answer in MATH-500 has 159 characters
 
-    # Verify the solution
-    correct, pred = verify(solution_str, ground_truth, strict_box_verify, pause_tokens_index)
+    # # Verify the solution
+    # correct, pred = verify(solution_str, ground_truth, strict_box_verify, pause_tokens_index)
 
-    reward = 1.0 if correct else -1.0
-    acc = correct
+    # reward = 1.0 if correct else -1.0
+    # acc = correct
+
+    # print({
+    #     "score": reward,
+    #     "acc": acc,
+    #     "pred": pred,
+    # })
+    is_longcot = True # default is true
+    if is_longcot:
+        if ("</think>" not in solution_str):
+            reward = -0.5
+            acc = (reward == 1.0)
+            pred = "[INVALID]"
+            return {
+                "score": reward,
+                "acc": acc,
+                "pred": pred,
+            }
+
+        if ("<think>" not in solution_str):
+            reward = -2.0
+            acc = (reward == 1.0)
+            pred = "[INVALID]"
+            return {
+                "score": reward,
+                "acc": acc,
+                "pred": pred,
+            }
+
+    solution_str = solution_str.split("</think>")[-1]
+    pred = solution_str[-30:]
+
+    reward = math_verify_from_sky(solution_str, ground_truth)
+    acc = (reward == 1.0)
+
+    print({
+        "score": reward,
+        "acc": acc,
+        "pred": pred,
+    })
 
     return {
         "score": reward,
